@@ -1,0 +1,23 @@
+# prometheus-grafana-values.yaml
+prometheus:
+  service:
+    type: LoadBalancer   # Expose Prometheus on the internet
+  prometheusSpec:
+    serviceMonitorSelector:
+      matchLabels: {}
+    podMonitorSelector:
+      matchLabels: {}
+
+grafana:
+  service:
+    type: LoadBalancer   # Expose Grafana on the internet
+  adminPassword: "admin"  # Set Grafana admin password (change for security)
+
+kube-state-metrics:
+  enabled: true  # Scrapes Kubernetes object states like deployments, pods, nodes, etc.
+
+nodeExporter:
+  enabled: true  # Gathers OS-level metrics (CPU, memory, disk)
+
+alertmanager:
+  enabled: false  # Disables Alertmanager if not needed
