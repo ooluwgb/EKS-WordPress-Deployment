@@ -1,15 +1,15 @@
 
-# EKS Monitoring with Prometheus and Grafana
+# EKS Monitoring with Prometheus and Grafana (Using values.yaml)
 
-This project provides step-by-step instructions to set up Prometheus and Grafana on an Amazon EKS (Elastic Kubernetes Service) cluster. It configures a robust monitoring stack with Grafana for visualization and Prometheus for metrics collection. The setup includes LoadBalancer services to enable external access to both UIs.
+This guide provides step-by-step instructions to set up Prometheus and Grafana on an Amazon EKS (Elastic Kubernetes Service) cluster using custom configuration values in a `values.yaml` file. This setup configures both services with LoadBalancer access for external UIs and includes enhanced monitoring capabilities for a more comprehensive view of your cluster.
 
 ---
 
 ## Prerequisites
 
 - An existing Amazon EKS cluster.
-- AWS CloudShell access, available in the AWS Management Console.
-- kubectl and Helm installed and configured to connect to your EKS cluster.
+- AWS CloudShell access with **kubectl** and **Helm** installed.
+- AWS CLI configured to connect to your EKS cluster.
 
 ---
 
@@ -17,7 +17,7 @@ This project provides step-by-step instructions to set up Prometheus and Grafana
 
 ### Step 1: Add Helm Repositories for Prometheus and Grafana
 
-In AWS CloudShell, add the official Helm repositories for Prometheus and Grafana:
+Add the official Helm repositories for Prometheus and Grafana:
 
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -27,140 +27,109 @@ helm repo update
 
 ---
 
-### Step 2: Deploy Prometheus
+### Step 2: Create the `values.yaml` Configuration
 
-We’ll use the **kube-prometheus-stack** Helm chart, which includes Prometheus and related components.
+Create a `values.yaml` file to configure Prometheus and Grafana with LoadBalancer services and enhanced monitoring.
 
-1. **Install Prometheus using Helm**:
-
-   ```bash
-   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
-   ```
-
-2. **Edit Prometheus Service to Use LoadBalancer**:
-
-   After deploying Prometheus, update its service type to LoadBalancer to enable external access.
-
-   ```bash
-   kubectl edit svc prometheus-kube-prometheus-prometheus -n monitoring
-   ```
-
-   Change the `type` field from `ClusterIP` to `LoadBalancer`:
+1. **Create a file named `prometheus-grafana-values.yaml`** with the following content:
 
    ```yaml
-   spec:
-     type: LoadBalancer
+   prometheus:
+     service:
+       type: LoadBalancer  # Expose Prometheus on the internet
+     prometheusSpec:
+       serviceMonitorSelector:
+         matchLabels: {}
+       podMonitorSelector:
+         matchLabels: {}
+
+   grafana:
+     service:
+       type: LoadBalancer  # Expose Grafana on the internet
+     adminPassword: "admin"  # Set Grafana admin password (change for security)
+
+   kube-state-metrics:
+     enabled: true  # Enables Kubernetes object metrics (deployments, pods, nodes)
+
+   nodeExporter:
+     enabled: true  # Enables node-level metrics (CPU, memory, disk)
+
+   alertmanager:
+     enabled: false  # Disables Alertmanager if not needed
    ```
 
-3. **Wait for the External IP**:
-
-   Check the external IP address of the Prometheus service by running:
-
-   ```bash
-   kubectl get svc prometheus-kube-prometheus-prometheus -n monitoring
-   ```
-
-   This will show an `EXTERNAL-IP` once the LoadBalancer is provisioned.
+   This configuration sets both Prometheus and Grafana services to `LoadBalancer` for external access and enables additional metrics collection.
 
 ---
 
-### Step 3: Deploy Grafana
+### Step 3: Deploy Prometheus and Grafana Using Helm
 
-1. **Install Grafana using Helm**:
+Deploy the monitoring stack with the custom `values.yaml` file:
 
-   ```bash
-   helm install grafana grafana/grafana --namespace monitoring
-   ```
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace -f prometheus-grafana-values.yaml
+```
 
-2. **Edit Grafana Service to Use LoadBalancer**:
-
-   Similar to Prometheus, update the Grafana service to make it accessible externally:
-
-   ```bash
-   kubectl edit svc grafana -n monitoring
-   ```
-
-   Change the `type` field to `LoadBalancer`:
-
-   ```yaml
-   spec:
-     type: LoadBalancer
-   ```
-
-3. **Retrieve the Grafana Admin Password**:
-
-   The Grafana admin password is stored in a Kubernetes secret. To retrieve it:
-
-   ```bash
-   kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-   ```
-
-4. **Wait for the External IP**:
-
-   Check the external IP address of the Grafana service by running:
-
-   ```bash
-   kubectl get svc grafana -n monitoring
-   ```
-
-   Use this IP to access the Grafana UI.
+This installs Prometheus, Grafana, Node Exporter, and Kube State Metrics with LoadBalancer access and custom configurations.
 
 ---
 
-### Step 4: Configure Prometheus as a Data Source in Grafana
+### Step 4: Retrieve the External IPs for Prometheus and Grafana
+
+1. **Check the LoadBalancer IPs for both Prometheus and Grafana**:
+
+   ```bash
+   kubectl get svc -n monitoring
+   ```
+
+2. Find the `EXTERNAL-IP` entries for both `prometheus-kube-prometheus-prometheus` and `monitoring-grafana`. Use these IPs to access the UIs in your browser.
+
+---
+
+### Step 5: Access Grafana and Add Prometheus as a Data Source
 
 1. **Access the Grafana UI**:
-   - Open your browser and navigate to the Grafana LoadBalancer URL.
-   - Log in using the username `admin` and the password retrieved in the previous step.
+   - Go to the Grafana LoadBalancer URL in your browser.
+   - Log in with **username**: `admin` and **password**: `admin` (or the password you set in the values file).
 
-2. **Add Prometheus as a Data Source**:
+2. **Add Prometheus as a Data Source in Grafana**:
    - In Grafana, go to **Configuration > Data Sources**.
    - Click **Add data source** and select **Prometheus**.
-
-3. **Configure the Prometheus Data Source**:
-   - Set the **URL** to the internal service URL for Prometheus:
-
-     ```
-     http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
-     ```
-
+   - Set the **URL** to `http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090`.
    - Click **Save & Test**.
 
 ---
 
-### Step 5: Import Pre-Built Kubernetes Dashboards in Grafana
+### Step 6: Import Kubernetes Dashboards in Grafana
 
-1. **Go to the Import Dashboard page**:
-   - In Grafana, go to **+** (plus icon) and select **Import**.
+1. **Import Pre-Built Dashboards**:
+   - Go to **+** (plus icon) > **Import** in Grafana.
 
-2. **Import Kubernetes Monitoring Dashboards**:
-   - Use the following dashboard IDs to import common Kubernetes dashboards:
-     - **Kubernetes Cluster Monitoring**: `315`
-     - **Kubernetes / Compute Resources / Node**: `1860`
-     - **Kubernetes / Compute Resources / Cluster**: `10000`
+2. **Use the following dashboard IDs** to import popular Kubernetes dashboards:
+   - **Kubernetes Cluster Monitoring**: `315`
+   - **Kubernetes / Compute Resources / Node**: `1860`
+   - **Kubernetes / Compute Resources / Cluster**: `10000`
 
-3. **Select Prometheus as the Data Source**:
-   - For each imported dashboard, select **Prometheus** as the data source.
+3. **Set Prometheus as the Data Source** when prompted.
 
 ---
 
-### Step 6: Additional Customization (Optional)
+### Step 7: Optional Customization
 
-1. **Configure Alerts in Grafana**:
-   - Go to **Alerting > Notification channels** to set up alerts for metrics.
+1. **Set Up Alerts in Grafana** (optional):
+   - Go to **Alerting > Notification channels** in Grafana to configure alerts.
 
 2. **Explore Metrics in Prometheus**:
-   - Access the Prometheus LoadBalancer URL to run queries directly.
+   - Use the Prometheus LoadBalancer URL to explore and test queries directly.
 
 ---
 
-### Step 7: Clean Up Resources
+### Step 8: Clean Up Resources
 
-To remove Prometheus, Grafana, and associated resources, run:
+To remove Prometheus, Grafana, and related resources, run:
 
 ```bash
-helm uninstall prometheus -n monitoring
-helm uninstall grafana -n monitoring
+helm uninstall monitoring -n monitoring
 kubectl delete namespace monitoring
 ```
 
@@ -168,8 +137,8 @@ kubectl delete namespace monitoring
 
 ## Summary
 
-- **Prometheus and Grafana**: Set up on EKS with LoadBalancer for external access.
-- **Pre-Built Dashboards**: Provides monitoring for cluster, nodes, and pods.
-- **Data Source Configuration**: Grafana is connected to Prometheus for visualizing metrics.
+- **Prometheus and Grafana**: Deployed on EKS with external access enabled.
+- **Pre-Built Dashboards**: Includes Kubernetes cluster monitoring for nodes, pods, and namespaces.
+- **Data Source Configuration**: Prometheus configured as a data source in Grafana.
 
-This setup provides comprehensive monitoring for your EKS cluster, allowing you to access Grafana and Prometheus externally and view metrics via detailed dashboards.
+This setup provides detailed monitoring for your EKS cluster, accessible via external UIs, and is designed to capture a broad range of Kubernetes metrics.
