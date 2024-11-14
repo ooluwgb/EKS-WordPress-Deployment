@@ -5,8 +5,8 @@ metadata:
 provisioner: efs.csi.aws.com
 parameters:
   provisioningMode: efs-ap  # Access Point mode required
-  fileSystemId: <your-efs-filesystem-id>  # Replace with your existing EFS filesystem ID
-  accessPointId: <your-jupyterlab-access-point-id>  # Use the newly created access point for JupyterLab
+  fileSystemId: fs-05b0878594b65b722  # Your EFS filesystem ID
+  accessPointId: fsap-057127cf2eb141f76  # Access point ID for JupyterLab
   directoryPerms: "700"
   gidRangeStart: "1000"
   gidRangeEnd: "2000"
