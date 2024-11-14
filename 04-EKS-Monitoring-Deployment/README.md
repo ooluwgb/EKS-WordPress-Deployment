@@ -1,7 +1,7 @@
 
 # EKS Monitoring with Prometheus and Grafana (Using values.yaml)
 
-This guide provides step-by-step instructions to set up Prometheus and Grafana on an Amazon EKS (Elastic Kubernetes Service) cluster using custom configuration values in a `values.yaml` file. This setup configures both services with LoadBalancer access for external UIs and includes enhanced monitoring capabilities for a more comprehensive view of your cluster.
+This guide provides step-by-step instructions to set up Prometheus and Grafana on an Amazon EKS (Elastic Kubernetes Service) cluster using a custom configuration values file (`prometheus-grafana-values.yaml`). This setup configures both services with LoadBalancer access for external UIs and includes enhanced monitoring capabilities for a more comprehensive view of your cluster.
 
 ---
 
@@ -27,44 +27,17 @@ helm repo update
 
 ---
 
-### Step 2: Create the `values.yaml` Configuration
+### Step 2: Verify the values.yaml Configuration
 
-Create a `values.yaml` file to configure Prometheus and Grafana with LoadBalancer services and enhanced monitoring.
+A `prometheus-grafana-values.yaml` file has been provided in this directory to configure Prometheus and Grafana with LoadBalancer services and enhanced monitoring.
 
-1. **Create a file named `prometheus-grafana-values.yaml`** with the following content:
-
-   ```yaml
-   prometheus:
-     service:
-       type: LoadBalancer  # Expose Prometheus on the internet
-     prometheusSpec:
-       serviceMonitorSelector:
-         matchLabels: {}
-       podMonitorSelector:
-         matchLabels: {}
-
-   grafana:
-     service:
-       type: LoadBalancer  # Expose Grafana on the internet
-     adminPassword: "admin"  # Set Grafana admin password (change for security)
-
-   kube-state-metrics:
-     enabled: true  # Enables Kubernetes object metrics (deployments, pods, nodes)
-
-   nodeExporter:
-     enabled: true  # Enables node-level metrics (CPU, memory, disk)
-
-   alertmanager:
-     enabled: false  # Disables Alertmanager if not needed
-   ```
-
-   This configuration sets both Prometheus and Grafana services to `LoadBalancer` for external access and enables additional metrics collection.
+**Note**: Review the contents of `prometheus-grafana-values.yaml` if you need to make any changes to the default settings, such as passwords or storage classes.
 
 ---
 
 ### Step 3: Deploy Prometheus and Grafana Using Helm
 
-Deploy the monitoring stack with the custom `values.yaml` file:
+Deploy the monitoring stack with the provided `prometheus-grafana-values.yaml` file:
 
 ```bash
 helm install monitoring prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace -f prometheus-grafana-values.yaml
