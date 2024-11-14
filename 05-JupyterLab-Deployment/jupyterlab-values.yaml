@@ -25,10 +25,7 @@ singleuser:
   extraEnv:
     JUPYTERHUB_ENABLE_PROMETHEUS: "true"  # Enables Prometheus metrics collection
 
-# Optional: Configurations for user scheduling and performance
-userScheduler:
-  enabled: true  # Enables a user scheduler to improve scheduling for user pods
-
+# Pre-puller hook to improve performance
 prePuller:
   hook:
     enabled: true  # Pulls the JupyterLab image in advance to improve startup times
