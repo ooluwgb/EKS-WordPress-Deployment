@@ -1,21 +1,34 @@
+# jupyterlab-values.yaml
+
+# Proxy settings for external access
 proxy:
   service:
-    type: LoadBalancer  # Expose JupyterHub/JupyterLab with a LoadBalancer for external access
+    type: LoadBalancer  # Exposes JupyterHub with a LoadBalancer for external access
 
+# JupyterHub configuration
 hub:
   db:
     pvc:
-      storageClassName: efs  # Optional: If EFS storage is desired for hub database
+      storageClassName: jupyterlab-efs  # EFS StorageClass specifically for JupyterLab
+  extraEnv:
+    JUPYTERHUB_ENABLE_PROMETHEUS: "true"  # Enables Prometheus metrics for monitoring
 
+# Configuring JupyterLab as the default interface for users
 singleuser:
   image:
     name: jupyter/minimal-notebook
     tag: latest
   storage:
     dynamic:
-      storageClass: efs  # Set to your EFS storage class for persistent notebook storage
-
-singleuser:
-  defaultUrl: "/lab"  # Use JupyterLab as the default user environment
+      storageClass: jupyterlab-efs  # Set to the EFS StorageClass for persistent notebook storage
+  defaultUrl: "/lab"  # Specifies JupyterLab as the default interface for users
   extraEnv:
-    JUPYTERHUB_ENABLE_PROMETHEUS: "true"  # Enable Prometheus metrics for JupyterLab
+    JUPYTERHUB_ENABLE_PROMETHEUS: "true"  # Enables Prometheus metrics collection
+
+# Optional: Configurations for user scheduling and performance
+userScheduler:
+  enabled: true  # Enables a user scheduler to improve scheduling for user pods
+
+prePuller:
+  hook:
+    enabled: true  # Pulls the JupyterLab image in advance to improve startup times
