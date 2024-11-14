@@ -1,0 +1,21 @@
+proxy:
+  service:
+    type: LoadBalancer  # Expose JupyterHub/JupyterLab with a LoadBalancer for external access
+
+hub:
+  db:
+    pvc:
+      storageClassName: efs  # Optional: If EFS storage is desired for hub database
+
+singleuser:
+  image:
+    name: jupyter/minimal-notebook
+    tag: latest
+  storage:
+    dynamic:
+      storageClass: efs  # Set to your EFS storage class for persistent notebook storage
+
+singleuser:
+  defaultUrl: "/lab"  # Use JupyterLab as the default user environment
+  extraEnv:
+    JUPYTERHUB_ENABLE_PROMETHEUS: "true"  # Enable Prometheus metrics for JupyterLab
